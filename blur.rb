@@ -2,13 +2,6 @@ class Image
   attr_reader :pixels
   attr_accessor :width, :height
 
-  ADJACENCY_MASK = [
-    [-1, 0],
-    [0, 1],
-    [1, 0],
-    [0, -1]
-  ]
-
   def initialize(pixels)
     @pixels = pixels
     self.width = pixels[0].length
@@ -32,18 +25,24 @@ class Image
     index.between?(0, height - 1)
   end
 
+  def valid_manhattan?(offset, distance)
+    offset[0].abs + offset[1].abs <= distance
+  end
+
   def blur_pixels(index_array)
     index_array.each do |index|
       set_pixel(index, 1)
     end
   end
 
-  def adjacent_pixels(index)
+  def adjacent_pixels(index, distance)
     indexes = []
-    ADJACENCY_MASK.each do |mask|
-      # Add the columns of the arrays
-      masked_index = [index, mask].transpose.map { |to_sum| to_sum.reduce(:+) }
-      indexes.push(masked_index) if valid_index?(masked_index)
+    (-distance).upto(distance) do |row|
+      (-distance).upto(distance) do |col|
+        next unless valid_manhattan?([row, col], distance)
+        idx = [index[0] - row, index[1] - col]
+        indexes.push idx if valid_index?(idx)
+      end
     end
     indexes
   end
@@ -58,10 +57,10 @@ class Image
     ones
   end
 
-  def blur
+  def blur(distance)
     to_blur = []
     ones.each do |idx|
-      to_blur += adjacent_pixels(idx)
+      to_blur += adjacent_pixels(idx, distance)
     end
     blur_pixels(to_blur)
   end
